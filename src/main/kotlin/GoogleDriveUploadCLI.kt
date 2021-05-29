@@ -17,13 +17,31 @@
 
 package com.gigadrivegroup.googledriveuploadcli
 
-/** The main entry point for the program. */
-public class Bootstrap {
-    public companion object {
-        @JvmStatic
-        public fun main(args: Array<String>) {
-            val cli = GoogleDriveUploadCLI()
-            cli.start()
+import com.gigadrivegroup.kotlincommons.feature.CommonsManager
+import com.gigadrivegroup.kotlincommons.feature.bind
+import org.koin.core.context.startKoin
+import org.koin.core.logger.Level
+
+/** The main class for the upload cli. */
+public class GoogleDriveUploadCLI {
+    public fun start() {
+        startKoin {
+            printLogger(Level.NONE)
+            modules()
         }
+
+        bind(this)
+
+        Runtime.getRuntime()
+            .addShutdownHook(
+                object : Thread() {
+                    override fun run() {
+                        shutdown()
+                    }
+                })
+    }
+
+    public fun shutdown() {
+        CommonsManager.shutdown()
     }
 }
