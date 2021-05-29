@@ -17,14 +17,12 @@
 
 package com.gigadrivegroup.googledriveuploadcli
 
-/** Provides simple logging options. */
-public object Logger {
-    /** Prints an INFO-level [message] to the console. */
-    public fun info(message: String): Unit = println("[INFO] $message")
-
-    /** Prints a WARNING-level [message] to the console. */
-    public fun warning(message: String): Unit = println("[WARNING] $message")
-
-    /** Prints an ERROR-level [message] to the console. */
-    public fun error(message: String): Unit = System.err.println("[ERROR] $message")
+/** The main entry point for the program. */
+public class Bootstrap {
+    public companion object {
+        @JvmStatic
+        public fun main(args: Array<String>) {
+            println("Hello world!")
+        }
+    }
 }
