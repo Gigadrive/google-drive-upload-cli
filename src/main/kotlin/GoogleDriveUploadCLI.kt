@@ -17,6 +17,7 @@
 
 package com.gigadrivegroup.googledriveuploadcli
 
+import com.gigadrivegroup.googledriveuploadcli.manager.CredentialsManager
 import com.gigadrivegroup.googledriveuploadcli.manager.GoogleAPIManager
 import com.gigadrivegroup.kotlincommons.feature.CommonsManager
 import com.gigadrivegroup.kotlincommons.feature.bind
@@ -33,6 +34,7 @@ public class GoogleDriveUploadCLI {
 
         bind(this)
         bind(GoogleAPIManager())
+        bind(CredentialsManager())
 
         Runtime.getRuntime()
             .addShutdownHook(
