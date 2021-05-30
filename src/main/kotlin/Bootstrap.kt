@@ -17,13 +17,29 @@
 
 package com.gigadrivegroup.googledriveuploadcli
 
+import com.xenomachina.argparser.ArgParser
+import com.xenomachina.argparser.DefaultHelpFormatter
+import com.xenomachina.argparser.mainBody
+
 /** The main entry point for the program. */
 public class Bootstrap {
     public companion object {
         @JvmStatic
         public fun main(args: Array<String>) {
-            val cli = GoogleDriveUploadCLI()
-            cli.start()
+            mainBody {
+                val prologueText =
+                    "This is a command line tool to easily upload a file to a Google Drive account. A one-time setup is required by simply running without any arguments. Afterwards, the Google credentials will be stored and automatically refreshed."
+                val epilogueText =
+                    "(C) 2021 Gigadrive UG, Mehdi Baaboura - Published under the MIT License"
+
+                ArgParser(
+                        args, ArgParser.Mode.GNU, DefaultHelpFormatter(prologueText, epilogueText))
+                    .parseInto(::GoogleDriveUploadCLIArgs)
+                    .run {
+                        val cli = GoogleDriveUploadCLI(this)
+                        cli.start()
+                    }
+            }
         }
     }
 }

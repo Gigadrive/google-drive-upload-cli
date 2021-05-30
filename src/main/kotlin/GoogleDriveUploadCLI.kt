@@ -26,7 +26,7 @@ import org.koin.core.context.startKoin
 import org.koin.core.logger.Level
 
 /** The main class for the upload cli. */
-public class GoogleDriveUploadCLI {
+public class GoogleDriveUploadCLI(public val args: GoogleDriveUploadCLIArgs) {
     public fun start() {
         startKoin {
             printLogger(Level.NONE)
@@ -34,6 +34,10 @@ public class GoogleDriveUploadCLI {
         }
 
         bind(this)
+
+        val logger = Logger(args.verbose)
+        bind(logger)
+
         bind(GoogleAPIManager())
         bind(CredentialsManager())
 
@@ -44,11 +48,12 @@ public class GoogleDriveUploadCLI {
             .addShutdownHook(
                 object : Thread() {
                     override fun run() {
+                        logger.debug("Shutting down.")
                         shutdown()
                     }
                 })
 
-        inputManager.startSetupProcess()
+        inputManager.startSetupProcess(args.forceSetup)
     }
 
     public fun shutdown() {

@@ -17,21 +17,17 @@
 
 package com.gigadrivegroup.googledriveuploadcli
 
-/** Provides simple logging options. */
-public class Logger(private val verbose: Boolean) {
-    /** Prints a DEBUG-level [message] to the console. */
-    public fun debug(message: String) {
-        if (!verbose) return
+import com.xenomachina.argparser.ArgParser
 
-        println("[DEBUG] $message")
-    }
+/** Stores the passed command arguments. */
+public class GoogleDriveUploadCLIArgs(parser: ArgParser) {
+    /** Whether or not to print debug information. */
+    public val verbose: Boolean by parser.flagging(
+        "-v", "--verbose", help = "Prints debug information.")
 
-    /** Prints an INFO-level [message] to the console. */
-    public fun info(message: String): Unit = println("[INFO] $message")
-
-    /** Prints a WARNING-level [message] to the console. */
-    public fun warning(message: String): Unit = println("[WARNING] $message")
-
-    /** Prints an ERROR-level [message] to the console. */
-    public fun error(message: String): Unit = System.err.println("[ERROR] $message")
+    /** Whether or not to force the first-time setup. */
+    public val forceSetup: Boolean by parser.flagging(
+        "-f",
+        "--force-setup",
+        help = "Forces the first-time setup, even if credentials already exist.")
 }

@@ -30,6 +30,7 @@ import java.io.FileWriter
 /** Loads and manages the [Credentials] used for interacting with the Google API. */
 public class CredentialsManager : CommonsManager() {
     private val apiManager: GoogleAPIManager by inject()
+    private val logger: Logger by inject()
 
     /** The currently loaded [Credentials]. */
     private var credentials: Credentials? = null
@@ -60,7 +61,7 @@ public class CredentialsManager : CommonsManager() {
             return
         }
 
-        Logger.info("Refreshing Google access token...")
+        logger.info("Refreshing Google access token...")
 
         val response =
             apiManager.refreshToken(

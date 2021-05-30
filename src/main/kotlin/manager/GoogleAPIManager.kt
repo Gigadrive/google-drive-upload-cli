@@ -17,7 +17,9 @@
 
 package com.gigadrivegroup.googledriveuploadcli.manager
 
+import com.gigadrivegroup.googledriveuploadcli.Logger
 import com.gigadrivegroup.kotlincommons.feature.CommonsManager
+import com.gigadrivegroup.kotlincommons.feature.inject
 import com.github.kittinunf.fuel.core.Request
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.result.Result
@@ -25,6 +27,7 @@ import com.google.gson.JsonParser
 
 /** A manager used for interacting with the Google API. */
 public class GoogleAPIManager : CommonsManager() {
+    private val logger: Logger by inject()
     private val contentType: String = "application/json; charset=utf-8"
 
     /**
@@ -47,6 +50,8 @@ public class GoogleAPIManager : CommonsManager() {
         when (result) {
             is Result.Failure -> throw Exception("Failed to get device code.")
             is Result.Success -> {
+                logger.debug("Verification request was successful [${response.statusCode}]")
+
                 val responseObject =
                     (JsonParser()).parse(response.body().asString(contentType)).asJsonObject
 
@@ -112,6 +117,8 @@ public class GoogleAPIManager : CommonsManager() {
                             "device_code" to deviceCode,
                             "grant_type" to grantType)))
                 .responseString()
+
+        logger.debug("Authorization request was completed [${response.statusCode}]")
 
         val responseObject =
             (JsonParser()).parse(response.body().asString(contentType)).asJsonObject
@@ -184,6 +191,8 @@ public class GoogleAPIManager : CommonsManager() {
         when (result) {
             is Result.Failure -> throw Exception("Failed to refresh access token.")
             is Result.Success -> {
+                logger.debug("Refresh token request was successful [${response.statusCode}]")
+
                 val responseObject =
                     (JsonParser()).parse(response.body().asString(contentType)).asJsonObject
 
