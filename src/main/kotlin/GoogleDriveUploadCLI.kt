@@ -22,6 +22,7 @@ import com.gigadrivegroup.googledriveuploadcli.manager.GoogleAPIManager
 import com.gigadrivegroup.googledriveuploadcli.manager.InputManager
 import com.gigadrivegroup.kotlincommons.feature.CommonsManager
 import com.gigadrivegroup.kotlincommons.feature.bind
+import kotlin.system.exitProcess
 import org.koin.core.context.startKoin
 import org.koin.core.logger.Level
 
@@ -53,7 +54,14 @@ public class GoogleDriveUploadCLI(public val args: GoogleDriveUploadCLIArgs) {
                     }
                 })
 
+        // start setup process if necessary
         inputManager.startSetupProcess(args.forceSetup)
+
+        // start uploading
+        if (!args.source.exists()) {
+            logger.error("Source file could not be found.")
+            exitProcess(1)
+        }
     }
 
     public fun shutdown() {

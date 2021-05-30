@@ -18,6 +18,7 @@
 package com.gigadrivegroup.googledriveuploadcli
 
 import com.xenomachina.argparser.ArgParser
+import java.io.File
 
 /** Stores the passed command arguments. */
 public class GoogleDriveUploadCLIArgs(parser: ArgParser) {
@@ -30,4 +31,12 @@ public class GoogleDriveUploadCLIArgs(parser: ArgParser) {
         "-f",
         "--force-setup",
         help = "Forces the first-time setup, even if credentials already exist.")
+
+    /** Path to the local file that should be uploaded. */
+    public val source: File by parser.positional(
+        "SOURCE", help = "Path to the local file that should be uploaded.") { File(this) }
+
+    /** The path of the destination folder on Google Drive. */
+    public val destination: String by parser.positional(
+        "DEST", help = "The path of the destination folder on Google Drive.")
 }
