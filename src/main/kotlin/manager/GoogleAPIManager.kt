@@ -17,7 +17,6 @@
 
 package com.gigadrivegroup.googledriveuploadcli.manager
 
-import com.gigadrivegroup.googledriveuploadcli.GSON
 import com.gigadrivegroup.kotlincommons.feature.CommonsManager
 import com.github.kittinunf.fuel.core.Request
 import com.github.kittinunf.fuel.httpPost
@@ -26,6 +25,8 @@ import com.google.gson.JsonParser
 
 /** A manager used for interacting with the Google API. */
 public class GoogleAPIManager : CommonsManager() {
+    private val contentType: String = "application/json; charset=utf-8"
+
     /**
      * Starts the authorization process with the specified [clientId] and [scope].
      * @throws Exception Throws an exception if the response is not as expected.
@@ -39,16 +40,15 @@ public class GoogleAPIManager : CommonsManager() {
     ): GoogleAPIDeviceCodeResponse {
         val (_, response, result) =
             addHeaders(
-                    "https://oauth2.googleapis.com/device/code"
-                        .httpPost()
-                        .body(GSON.toJson(listOf("client_id" to clientId, "scope" to scope))))
+                    "https://oauth2.googleapis.com/device/code".httpPost(
+                        listOf("client_id" to clientId, "scope" to scope)))
                 .responseString()
 
         when (result) {
             is Result.Failure -> throw Exception("Failed to get device code.")
             is Result.Success -> {
                 val responseObject =
-                    (JsonParser()).parse(response.body().asString(null)).asJsonObject
+                    (JsonParser()).parse(response.body().asString(contentType)).asJsonObject
 
                 if (responseObject.has("error") && responseObject.has("error_description")) {
                     throw Exception(
@@ -68,7 +68,14 @@ public class GoogleAPIManager : CommonsManager() {
                     throw Exception("Google returned an invalid response.")
                 }
 
-                return GSON.fromJson(responseObject, GoogleAPIDeviceCodeResponse::class.java)
+                val deviceCode = responseObject.get("device_code").asString
+                val expiresIn = responseObject.get("expires_in").asLong
+                val interval = responseObject.get("interval").asInt
+                val userCode = responseObject.get("user_code").asString
+                val verificationUrl = responseObject.get("verification_url").asString
+
+                return GoogleAPIDeviceCodeResponse(
+                    deviceCode, userCode, expiresIn, interval, verificationUrl)
             }
         }
     }
@@ -96,54 +103,52 @@ public class GoogleAPIManager : CommonsManager() {
         deviceCode: String,
         grantType: String = "urn:ietf:params:oauth:grant-type:device_code"
     ): GoogleAPIAuthorizationPollingResponse? {
-        val (_, response, result) =
+        val (_, response, _) =
             addHeaders(
-                    "https://oauth2.googleapis.com/token"
-                        .httpPost()
-                        .body(
-                            GSON.toJson(
-                                listOf(
-                                    "client_id" to clientId,
-                                    "client_secret" to clientSecret,
-                                    "device_code" to deviceCode,
-                                    "grant_type" to grantType))))
+                    "https://oauth2.googleapis.com/token".httpPost(
+                        listOf(
+                            "client_id" to clientId,
+                            "client_secret" to clientSecret,
+                            "device_code" to deviceCode,
+                            "grant_type" to grantType)))
                 .responseString()
 
-        when (result) {
-            is Result.Failure -> throw Exception("Failed to poll authorization.")
-            is Result.Success -> {
-                val responseObject =
-                    (JsonParser()).parse(response.body().asString(null)).asJsonObject
+        val responseObject =
+            (JsonParser()).parse(response.body().asString(contentType)).asJsonObject
 
-                if (responseObject.has("error") && responseObject.has("error_description")) {
-                    val error = responseObject.get("error").asString
+        if (responseObject.has("error") && responseObject.has("error_description")) {
+            val error = responseObject.get("error").asString
 
-                    // user pending or requesting too quickly
-                    if (error === "authorization_pending" || error === "slow_down") {
-                        return null
-                    }
-
-                    throw Exception(
-                        "Google API returned an error (${error}): ${responseObject.get("error_description").asString}.")
-                }
-
-                if (responseObject.has("error_code")) {
-                    throw Exception(
-                        "Google API returned an error: ${responseObject.get("error_code").asString}.")
-                }
-
-                if (!responseObject.has("access_token") ||
-                    !responseObject.has("expires_in") ||
-                    !responseObject.has("scope") ||
-                    !responseObject.has("token_type") ||
-                    !responseObject.has("refresh_token")) {
-                    throw Exception("Google returned an invalid response.")
-                }
-
-                return GSON.fromJson(
-                    responseObject, GoogleAPIAuthorizationPollingResponse::class.java)
+            // user pending or requesting too quickly
+            if (error == "authorization_pending" || error == "slow_down") {
+                return null
             }
+
+            throw Exception(
+                "Google API returned an error (${error}): ${responseObject.get("error_description").asString}.")
         }
+
+        if (responseObject.has("error_code")) {
+            throw Exception(
+                "Google API returned an error: ${responseObject.get("error_code").asString}.")
+        }
+
+        if (!responseObject.has("access_token") ||
+            !responseObject.has("expires_in") ||
+            !responseObject.has("scope") ||
+            !responseObject.has("token_type") ||
+            !responseObject.has("refresh_token")) {
+            throw Exception("Google returned an invalid response.")
+        }
+
+        val accessToken = responseObject.get("access_token").asString
+        val expiresIn = responseObject.get("expires_in").asLong
+        val scope = responseObject.get("scope").asString
+        val tokenType = responseObject.get("token_type").asString
+        val refreshToken = responseObject.get("refresh_token").asString
+
+        return GoogleAPIAuthorizationPollingResponse(
+            accessToken, expiresIn, refreshToken, scope, tokenType)
     }
 
     /**
@@ -168,22 +173,19 @@ public class GoogleAPIManager : CommonsManager() {
     ): GoogleAPITokenRefreshResponse {
         val (_, response, result) =
             addHeaders(
-                    "https://oauth2.googleapis.com/token"
-                        .httpPost()
-                        .body(
-                            GSON.toJson(
-                                listOf(
-                                    "client_id" to clientId,
-                                    "client_secret" to clientSecret,
-                                    "grant_type" to grantType,
-                                    "refresh_token" to refreshToken))))
+                    "https://oauth2.googleapis.com/token".httpPost(
+                        listOf(
+                            "client_id" to clientId,
+                            "client_secret" to clientSecret,
+                            "grant_type" to grantType,
+                            "refresh_token" to refreshToken)))
                 .responseString()
 
         when (result) {
             is Result.Failure -> throw Exception("Failed to refresh access token.")
             is Result.Success -> {
                 val responseObject =
-                    (JsonParser()).parse(response.body().asString(null)).asJsonObject
+                    (JsonParser()).parse(response.body().asString(contentType)).asJsonObject
 
                 if (responseObject.has("error") && responseObject.has("error_description")) {
                     throw Exception(
@@ -202,7 +204,12 @@ public class GoogleAPIManager : CommonsManager() {
                     throw Exception("Google returned an invalid response.")
                 }
 
-                return GSON.fromJson(responseObject, GoogleAPITokenRefreshResponse::class.java)
+                val accessToken = responseObject.get("access_token").asString
+                val expiresIn = responseObject.get("expires_in").asLong
+                val scope = responseObject.get("scope").asString
+                val tokenType = responseObject.get("token_type").asString
+
+                return GoogleAPITokenRefreshResponse(accessToken, expiresIn, scope, tokenType)
             }
         }
     }
@@ -212,7 +219,7 @@ public class GoogleAPIManager : CommonsManager() {
         return request.appendHeader(
             "User-Agent" to
                 "google-drive-upload-cli (https://github.com/Gigadrive/google-drive-upload-cli)",
-            "Content-Type" to "application/json")
+            "Content-Type" to "application/x-www-form-urlencoded")
     }
 }
 

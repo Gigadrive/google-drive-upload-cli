@@ -19,6 +19,7 @@ package com.gigadrivegroup.googledriveuploadcli
 
 import com.gigadrivegroup.googledriveuploadcli.manager.CredentialsManager
 import com.gigadrivegroup.googledriveuploadcli.manager.GoogleAPIManager
+import com.gigadrivegroup.googledriveuploadcli.manager.InputManager
 import com.gigadrivegroup.kotlincommons.feature.CommonsManager
 import com.gigadrivegroup.kotlincommons.feature.bind
 import org.koin.core.context.startKoin
@@ -36,6 +37,9 @@ public class GoogleDriveUploadCLI {
         bind(GoogleAPIManager())
         bind(CredentialsManager())
 
+        val inputManager = InputManager()
+        bind(inputManager)
+
         Runtime.getRuntime()
             .addShutdownHook(
                 object : Thread() {
@@ -43,6 +47,8 @@ public class GoogleDriveUploadCLI {
                         shutdown()
                     }
                 })
+
+        inputManager.startSetupProcess()
     }
 
     public fun shutdown() {

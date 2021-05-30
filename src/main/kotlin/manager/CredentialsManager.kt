@@ -21,16 +21,17 @@ import com.gigadrivegroup.googledriveuploadcli.GSON
 import com.gigadrivegroup.kotlincommons.feature.CommonsManager
 import com.google.gson.stream.JsonReader
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.FileReader
 import java.io.FileWriter
 
 /** Loads and manages the [Credentials] used for interacting with the Google API. */
 public class CredentialsManager : CommonsManager() {
     /** The currently loaded [Credentials]. */
-    private lateinit var credentials: Credentials
+    private var credentials: Credentials? = null
 
     /** The [File] that stores the [Credentials] used for interacting with the Google API. */
-    private val credentialsFile: File =
+    public val credentialsFile: File =
         File(System.getProperty("user.dir") + File.separator + "/gdriveupload.credentials")
 
     init {
@@ -38,10 +39,10 @@ public class CredentialsManager : CommonsManager() {
     }
 
     /** The currently loaded [Credentials]. */
-    public fun getCredentials(): Credentials = credentials
+    public fun getCredentials(): Credentials? = credentials
 
     /** Sets the currently loaded [Credentials] to the passed [credentials] instance. */
-    public fun setCredentials(credentials: Credentials) {
+    public fun setCredentials(credentials: Credentials?) {
         this.credentials = credentials
         saveCredentials()
     }
@@ -52,8 +53,10 @@ public class CredentialsManager : CommonsManager() {
      */
     @Throws(Exception::class)
     public fun loadCredentials() {
-        this.credentials =
-            GSON.fromJson(JsonReader(FileReader(credentialsFile)), Credentials::class.java)
+        try {
+            this.credentials =
+                GSON.fromJson(JsonReader(FileReader(credentialsFile)), Credentials::class.java)
+        } catch (ignored: FileNotFoundException) {}
     }
 
     /**
