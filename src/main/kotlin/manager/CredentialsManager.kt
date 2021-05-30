@@ -18,7 +18,9 @@
 package com.gigadrivegroup.googledriveuploadcli.manager
 
 import com.gigadrivegroup.googledriveuploadcli.GSON
+import com.gigadrivegroup.googledriveuploadcli.Logger
 import com.gigadrivegroup.kotlincommons.feature.CommonsManager
+import com.gigadrivegroup.kotlincommons.feature.inject
 import com.google.gson.stream.JsonReader
 import java.io.File
 import java.io.FileNotFoundException
@@ -27,6 +29,8 @@ import java.io.FileWriter
 
 /** Loads and manages the [Credentials] used for interacting with the Google API. */
 public class CredentialsManager : CommonsManager() {
+    private val apiManager: GoogleAPIManager by inject()
+
     /** The currently loaded [Credentials]. */
     private var credentials: Credentials? = null
 
@@ -36,6 +40,7 @@ public class CredentialsManager : CommonsManager() {
 
     init {
         loadCredentials()
+        checkCredentials()
     }
 
     /** The currently loaded [Credentials]. */
@@ -45,6 +50,31 @@ public class CredentialsManager : CommonsManager() {
     public fun setCredentials(credentials: Credentials?) {
         this.credentials = credentials
         saveCredentials()
+    }
+
+    /** Checks if the current [Credentials] are expired and refreshes them if necessary. */
+    public fun checkCredentials() {
+        val credentials = this.credentials ?: return
+
+        if (credentials.expiresAt >= System.currentTimeMillis() - (100 * 1000)) {
+            return
+        }
+
+        Logger.info("Refreshing Google access token...")
+
+        val response =
+            apiManager.refreshToken(
+                credentials.clientId, credentials.clientSecret, credentials.refreshToken)
+
+        val newCredentials =
+            Credentials(
+                credentials.clientId,
+                credentials.clientSecret,
+                response.accessToken,
+                credentials.refreshToken,
+                System.currentTimeMillis() + (response.expiresIn * 1000))
+
+        setCredentials(newCredentials)
     }
 
     /**
@@ -76,6 +106,12 @@ public class CredentialsManager : CommonsManager() {
 
 /** Represents the Google API credentials stored in a file. */
 public class Credentials(
+    /** The Google Cloud project's Client ID used for interacting with the Google API. */
+    public val clientId: String,
+
+    /** The Google Cloud project's Client Secret used for interacting with the Google API. */
+    public val clientSecret: String,
+
     /** The OAuth access token used for interacting with the Google API. */
     public val accessToken: String,
 

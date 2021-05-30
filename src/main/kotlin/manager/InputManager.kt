@@ -77,6 +77,8 @@ public class InputManager : CommonsManager() {
 
         credentialsManager.setCredentials(
             Credentials(
+                clientId,
+                clientSecret,
                 pollingResponse.accessToken,
                 pollingResponse.refreshToken,
                 System.currentTimeMillis() + (pollingResponse.expiresIn * 1000)))
