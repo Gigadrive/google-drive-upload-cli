@@ -50,6 +50,11 @@ public class GoogleAPIManager : CommonsManager() {
                 val responseObject =
                     (JsonParser()).parse(response.body().asString(null)).asJsonObject
 
+                if (responseObject.has("error") && responseObject.has("error_description")) {
+                    throw Exception(
+                        "Google API returned an error (${responseObject.get("error").asString}): ${responseObject.get("error_description").asString}.")
+                }
+
                 if (responseObject.has("error_code")) {
                     throw Exception(
                         "Google API returned an error: ${responseObject.get("error_code").asString}.")
@@ -141,6 +146,67 @@ public class GoogleAPIManager : CommonsManager() {
         }
     }
 
+    /**
+     * Requests a new access token if the current one is expired.
+     *
+     * @throws Exception Throws an exception if the response is not as expected.
+     *
+     * @param clientId The client ID obtained from the API Console.
+     * @param clientSecret The client secret obtained from the API Console.
+     * @param refreshToken The refresh token returned from the authorization code exchange.
+     * @param grantType As defined in the OAuth 2.0 specification, this field's value must be set to
+     * refresh_token.
+     *
+     * https://developers.google.com/identity/protocols/oauth2/limited-input-device#offline
+     */
+    @Throws(Exception::class)
+    public fun refreshToken(
+        clientId: String,
+        clientSecret: String,
+        refreshToken: String,
+        grantType: String = "refresh_token"
+    ): GoogleAPITokenRefreshResponse {
+        val (_, response, result) =
+            addHeaders(
+                    "https://oauth2.googleapis.com/token"
+                        .httpPost()
+                        .body(
+                            GSON.toJson(
+                                listOf(
+                                    "client_id" to clientId,
+                                    "client_secret" to clientSecret,
+                                    "grant_type" to grantType,
+                                    "refresh_token" to refreshToken))))
+                .responseString()
+
+        when (result) {
+            is Result.Failure -> throw Exception("Failed to refresh access token.")
+            is Result.Success -> {
+                val responseObject =
+                    (JsonParser()).parse(response.body().asString(null)).asJsonObject
+
+                if (responseObject.has("error") && responseObject.has("error_description")) {
+                    throw Exception(
+                        "Google API returned an error (${responseObject.get("error").asString}): ${responseObject.get("error_description").asString}.")
+                }
+
+                if (responseObject.has("error_code")) {
+                    throw Exception(
+                        "Google API returned an error: ${responseObject.get("error_code").asString}.")
+                }
+
+                if (!responseObject.has("access_token") ||
+                    !responseObject.has("expires_in") ||
+                    !responseObject.has("scope") ||
+                    !responseObject.has("token_type")) {
+                    throw Exception("Google returned an invalid response.")
+                }
+
+                return GSON.fromJson(responseObject, GoogleAPITokenRefreshResponse::class.java)
+            }
+        }
+    }
+
     /** Adds the necessary headers to a [request]. */
     private fun addHeaders(request: Request): Request {
         return request.appendHeader(
@@ -212,6 +278,27 @@ public class GoogleAPIAuthorizationPollingResponse(
      * user revokes access. Note that refresh tokens are always returned for devices.
      */
     public val refreshToken: String,
+
+    /**
+     * The scopes of access granted by the access_token expressed as a list of space-delimited,
+     * case-sensitive strings.
+     */
+    public val scope: String,
+
+    /** The type of token returned. At this time, this field's value is always set to Bearer. */
+    public val tokenType: String
+)
+
+/**
+ * The response provided by the Google API when refreshing a token.
+ * https://developers.google.com/identity/protocols/oauth2/limited-input-device#offline
+ */
+public class GoogleAPITokenRefreshResponse(
+    /** The token that your application sends to authorize a Google API request. */
+    public val accessToken: String,
+
+    /** The remaining lifetime of the access token in seconds. */
+    public val expiresIn: Long,
 
     /**
      * The scopes of access granted by the access_token expressed as a list of space-delimited,
