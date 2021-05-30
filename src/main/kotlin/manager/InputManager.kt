@@ -36,7 +36,7 @@ public class InputManager : CommonsManager() {
 
         // introduction
         println("Hello, this is the first time setup.")
-        println("Please create a Google Cloud project here: ")
+        println("Please create a Google Cloud project here: https://gigadrive.link/GWbYHN")
         println("Then create your OAuth credentials:")
         println(
             "  Create credentials > Configure OAuth consent screen > Application type > TV and Limited Input Devices")
