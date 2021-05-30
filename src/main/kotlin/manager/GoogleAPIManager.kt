@@ -29,13 +29,15 @@ public class GoogleAPIManager : CommonsManager() {
     /**
      * Starts the authorization process with the specified [clientId] and [scope].
      * @throws Exception Throws an exception if the response is not as expected.
+     *
+     * https://developers.google.com/identity/protocols/oauth2/limited-input-device#step-1:-request-device-and-user-codes
      */
     @Throws(Exception::class)
     public fun verifyDevice(
         clientId: String,
         scope: String = "https://www.googleapis.com/auth/drive.file"
     ): GoogleAPIDeviceCodeResponse {
-        val (request, response, result) =
+        val (_, response, result) =
             addHeaders(
                     "https://oauth2.googleapis.com/device/code"
                         .httpPost()
@@ -62,6 +64,79 @@ public class GoogleAPIManager : CommonsManager() {
                 }
 
                 return GSON.fromJson(responseObject, GoogleAPIDeviceCodeResponse::class.java)
+            }
+        }
+    }
+
+    /**
+     * Polls authorization details when the user is opening the Google OAuth page. Returns null if
+     * the user has not yet authorized the application.
+     *
+     * @throws Exception Throws an exception if the response is not as expected.
+     *
+     * @param clientId The client ID for your application. You can find this value in the API
+     * Console Credentials page.
+     * @param clientSecret The client secret for the provided client_id. You can find this value in
+     * the API Console Credentials page.
+     * @param deviceCode The device_code returned by the authorization server in
+     * [GoogleAPIDeviceCodeResponse.deviceCode].
+     * @param grantType Set this value to urn:ietf:params:oauth:grant-type:device_code.
+     *
+     * https://developers.google.com/identity/protocols/oauth2/limited-input-device#step-4:-poll-googles-authorization-server
+     */
+    @Throws(Exception::class)
+    public fun pollAuthorization(
+        clientId: String,
+        clientSecret: String,
+        deviceCode: String,
+        grantType: String = "urn:ietf:params:oauth:grant-type:device_code"
+    ): GoogleAPIAuthorizationPollingResponse? {
+        val (_, response, result) =
+            addHeaders(
+                    "https://oauth2.googleapis.com/token"
+                        .httpPost()
+                        .body(
+                            GSON.toJson(
+                                listOf(
+                                    "client_id" to clientId,
+                                    "client_secret" to clientSecret,
+                                    "device_code" to deviceCode,
+                                    "grant_type" to grantType))))
+                .responseString()
+
+        when (result) {
+            is Result.Failure -> throw Exception("Failed to poll authorization.")
+            is Result.Success -> {
+                val responseObject =
+                    (JsonParser()).parse(response.body().asString(null)).asJsonObject
+
+                if (responseObject.has("error") && responseObject.has("error_description")) {
+                    val error = responseObject.get("error").asString
+
+                    // user pending or requesting too quickly
+                    if (error === "authorization_pending" || error === "slow_down") {
+                        return null
+                    }
+
+                    throw Exception(
+                        "Google API returned an error (${error}): ${responseObject.get("error_description").asString}.")
+                }
+
+                if (responseObject.has("error_code")) {
+                    throw Exception(
+                        "Google API returned an error: ${responseObject.get("error_code").asString}.")
+                }
+
+                if (!responseObject.has("access_token") ||
+                    !responseObject.has("expires_in") ||
+                    !responseObject.has("scope") ||
+                    !responseObject.has("token_type") ||
+                    !responseObject.has("refresh_token")) {
+                    throw Exception("Google returned an invalid response.")
+                }
+
+                return GSON.fromJson(
+                    responseObject, GoogleAPIAuthorizationPollingResponse::class.java)
             }
         }
     }
@@ -119,4 +194,31 @@ public class GoogleAPIDeviceCodeResponse(
      * or deny access to your application. Your user interface will also display this value.
      */
     public val verificationUrl: String
+)
+
+/**
+ * The response provided by the Google API when polling authorization.
+ * https://developers.google.com/identity/protocols/oauth2/limited-input-device#step-6:-handle-responses-to-polling-requests
+ */
+public class GoogleAPIAuthorizationPollingResponse(
+    /** The token that your application sends to authorize a Google API request. */
+    public val accessToken: String,
+
+    /** The remaining lifetime of the access token in seconds. */
+    public val expiresIn: Long,
+
+    /**
+     * A token that you can use to obtain a new access token. Refresh tokens are valid until the
+     * user revokes access. Note that refresh tokens are always returned for devices.
+     */
+    public val refreshToken: String,
+
+    /**
+     * The scopes of access granted by the access_token expressed as a list of space-delimited,
+     * case-sensitive strings.
+     */
+    public val scope: String,
+
+    /** The type of token returned. At this time, this field's value is always set to Bearer. */
+    public val tokenType: String
 )
