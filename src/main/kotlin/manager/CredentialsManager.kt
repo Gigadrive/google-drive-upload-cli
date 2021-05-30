@@ -21,6 +21,9 @@ import com.gigadrivegroup.googledriveuploadcli.GSON
 import com.gigadrivegroup.googledriveuploadcli.Logger
 import com.gigadrivegroup.kotlincommons.feature.CommonsManager
 import com.gigadrivegroup.kotlincommons.feature.inject
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
+import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.gson.stream.JsonReader
 import java.io.File
 import java.io.FileNotFoundException
@@ -28,7 +31,7 @@ import java.io.FileReader
 import java.io.FileWriter
 
 /** Loads and manages the [Credentials] used for interacting with the Google API. */
-public class CredentialsManager : CommonsManager() {
+public class CredentialsManager(private val forceRefresh: Boolean) : CommonsManager() {
     private val apiManager: GoogleAPIManager by inject()
     private val logger: Logger by inject()
 
@@ -41,7 +44,7 @@ public class CredentialsManager : CommonsManager() {
 
     init {
         loadCredentials()
-        checkCredentials()
+        checkCredentials(forceRefresh)
     }
 
     /** The currently loaded [Credentials]. */
@@ -53,11 +56,14 @@ public class CredentialsManager : CommonsManager() {
         saveCredentials()
     }
 
-    /** Checks if the current [Credentials] are expired and refreshes them if necessary. */
-    public fun checkCredentials() {
+    /**
+     * Checks if the current [Credentials] are expired and refreshes them if necessary.
+     * @param force If true, the token will be refreshed, even if not necessary.
+     */
+    public fun checkCredentials(force: Boolean = false) {
         val credentials = this.credentials ?: return
 
-        if (credentials.expiresAt >= System.currentTimeMillis() - (100 * 1000)) {
+        if (!force && credentials.expiresAt >= System.currentTimeMillis() - (100 * 1000)) {
             return
         }
 
@@ -121,4 +127,16 @@ public class Credentials(
 
     /** The UNIX timestamp when the access token expires and needs refreshing. */
     public val expiresAt: Long
-)
+) {
+    /** Returns these credentials as a [GoogleCredential] instance. */
+    public fun toGoogleCredentials(): GoogleCredential {
+        return GoogleCredential.Builder()
+            .setClientSecrets(clientId, clientSecret)
+            .setJsonFactory(JacksonFactory.getDefaultInstance())
+            .setTransport(GoogleNetHttpTransport.newTrustedTransport())
+            .build()
+            .setAccessToken(accessToken)
+            .setRefreshToken(refreshToken)
+            .setExpirationTimeMilliseconds(expiresAt)
+    }
+}

@@ -223,12 +223,13 @@ public class GoogleAPIManager : CommonsManager() {
         }
     }
 
-    /** Adds the necessary headers to a [request]. */
-    private fun addHeaders(request: Request): Request {
+    /** Adds the necessary headers to a [request] and includes a [bearerToken] if necessary. */
+    public fun addHeaders(request: Request, bearerToken: String? = null): Request {
         return request.appendHeader(
             "User-Agent" to
                 "google-drive-upload-cli (https://github.com/Gigadrive/google-drive-upload-cli)",
-            "Content-Type" to "application/x-www-form-urlencoded")
+            "Content-Type" to "application/x-www-form-urlencoded",
+            "Authorization" to if (bearerToken != null) "Bearer $bearerToken" else "")
     }
 }
 

@@ -32,11 +32,17 @@ public class GoogleDriveUploadCLIArgs(parser: ArgParser) {
         "--force-setup",
         help = "Forces the first-time setup, even if credentials already exist.")
 
+    /** Whether or not to force the token refreshing. */
+    public val refreshToken: Boolean by parser.flagging(
+        "-r", "--refresh-token", help = "Forces the Google API access token to be refreshed.")
+
     /** Path to the local file that should be uploaded. */
     public val source: File by parser.positional(
         "SOURCE", help = "Path to the local file that should be uploaded.") { File(this) }
 
     /** The path of the destination folder on Google Drive. */
     public val destination: String by parser.positional(
-        "DEST", help = "The path of the destination folder on Google Drive.")
+        "DEST",
+        help =
+            "The path of the destination folder on Google Drive. Use \".\" to upload into the root folder.")
 }

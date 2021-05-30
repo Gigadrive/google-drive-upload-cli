@@ -20,6 +20,7 @@ package com.gigadrivegroup.googledriveuploadcli
 import com.gigadrivegroup.googledriveuploadcli.manager.CredentialsManager
 import com.gigadrivegroup.googledriveuploadcli.manager.GoogleAPIManager
 import com.gigadrivegroup.googledriveuploadcli.manager.InputManager
+import com.gigadrivegroup.googledriveuploadcli.manager.UploadManager
 import com.gigadrivegroup.kotlincommons.feature.CommonsManager
 import com.gigadrivegroup.kotlincommons.feature.bind
 import kotlin.system.exitProcess
@@ -40,7 +41,10 @@ public class GoogleDriveUploadCLI(public val args: GoogleDriveUploadCLIArgs) {
         bind(logger)
 
         bind(GoogleAPIManager())
-        bind(CredentialsManager())
+        bind(CredentialsManager(args.refreshToken))
+
+        val uploadManager = UploadManager()
+        bind(uploadManager)
 
         val inputManager = InputManager()
         bind(inputManager)
@@ -62,6 +66,8 @@ public class GoogleDriveUploadCLI(public val args: GoogleDriveUploadCLIArgs) {
             logger.error("Source file could not be found.")
             exitProcess(1)
         }
+
+        uploadManager.startUpload(args.source, args.destination)
     }
 
     public fun shutdown() {
