@@ -59,6 +59,12 @@ java {
     withSourcesJar()
 }
 
+jar {
+    manifest {
+        attributes "Main-Class": "com.gigadrivegroup.googledriveuploadcli.Bootstrap"
+    }
+}
+
 tasks.shadowJar {
     minimize() // only shades the classes that are actually needed
 }
