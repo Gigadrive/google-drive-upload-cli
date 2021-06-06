@@ -67,7 +67,7 @@ public class GoogleDriveUploadCLI(public val args: GoogleDriveUploadCLIArgs) {
             exitProcess(1)
         }
 
-        uploadManager.startUpload(args.source, args.destination)
+        uploadManager.startUpload(args.source, args.destination, args.mimeType)
     }
 
     public fun shutdown() {

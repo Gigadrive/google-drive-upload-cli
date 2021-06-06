@@ -18,6 +18,7 @@
 package com.gigadrivegroup.googledriveuploadcli
 
 import com.xenomachina.argparser.ArgParser
+import com.xenomachina.argparser.default
 import java.io.File
 
 /** Stores the passed command arguments. */
@@ -35,6 +36,15 @@ public class GoogleDriveUploadCLIArgs(parser: ArgParser) {
     /** Whether or not to force the token refreshing. */
     public val refreshToken: Boolean by parser.flagging(
         "-r", "--refresh-token", help = "Forces the Google API access token to be refreshed.")
+
+    /** The mime type to use. */
+    public val mimeType: String? by parser
+        .storing(
+            "-m",
+            "--mime-type",
+            help =
+                "The mime type of the file to upload. If not specified, the mime type will be guessed based on the file's name.")
+        .default(null)
 
     /** Path to the local file that should be uploaded. */
     public val source: File by parser.positional(
