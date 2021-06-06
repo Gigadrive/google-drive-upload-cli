@@ -26,7 +26,7 @@ This command will upload the file `file.mp4` into my Google Drive folder called 
 There are some options available to change the behaviour of this tool. You can find a list by using the `--help` flag at the end of the command.
 
 ```
-usage: [-h] [-v] [-f] [-r] SOURCE DEST
+usage: [-h] [-v] [-f] [-r] [-m MIME_TYPE] SOURCE DEST
 
 
 This is a command line tool to easily upload a file to a Google Drive account. A
@@ -35,22 +35,25 @@ the Google credentials will be stored and automatically refreshed.
 
 
 optional arguments:
-  -h, --help        show this help message and exit
+  -h, --help              show this help message and exit
 
-  -v, --verbose     Prints debug information.
+  -v, --verbose           Prints debug information.
 
-  -f,               Forces the first-time setup, even if credentials already
-  --force-setup     exist.
+  -f, --force-setup       Forces the first-time setup, even if credentials
+                          already exist.
 
-  -r,               Forces the Google API access token to be refreshed.
-  --refresh-token
+  -r, --refresh-token     Forces the Google API access token to be refreshed.
+
+  -m MIME_TYPE,           The mime type of the file to upload. If not
+  --mime-type MIME_TYPE   specified, the mime type will be guessed based on
+                          the file's name.
 
 
 positional arguments:
-  SOURCE            Path to the local file that should be uploaded.
+  SOURCE                  Path to the local file that should be uploaded.
 
-  DEST              The path of the destination folder on Google Drive. Use
-                    "." to upload into the root folder.
+  DEST                    The path of the destination folder on Google Drive.
+                          Use "." to upload into the root folder.
 
 
 (C) 2021 Gigadrive UG, Mehdi Baaboura - Published under the MIT License
