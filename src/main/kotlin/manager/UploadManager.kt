@@ -38,6 +38,11 @@ public class UploadManager : CommonsManager() {
     public fun startUpload(source: File, destination: String, mimeType: String? = null) {
         val credentials = credentialsManager.getCredentials() ?: return
 
+        var finalMimeType = mimeType
+        if (finalMimeType == null) {
+            finalMimeType = URLConnection.guessContentTypeFromName(source.name)
+        }
+
         logger.info("Starting upload. This may take a while.")
 
         val destinationPrefix =
@@ -49,8 +54,7 @@ public class UploadManager : CommonsManager() {
 
         val googleDriveFile = com.google.api.services.drive.model.File()
         googleDriveFile.name = destinationPrefix + source.name
-        googleDriveFile.mimeType =
-            mimeType ?: URLConnection.guessContentTypeFromName(source.name) ?: "text/plain"
+        googleDriveFile.mimeType = finalMimeType ?: "text/plain"
         googleDriveFile.setSize(source.length())
 
         ResumableUpload.uploadFile(credentials.toGoogleCredentials(), googleDriveFile, source)
